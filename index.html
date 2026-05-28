@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitAI — Your AI Weight Loss Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;
+      --accent:#00e676;--accent-dim:rgba(0,230,118,0.15);
+      --accent2:#00b0ff;--accent2-dim:rgba(0,176,255,0.12);
+      --text:#ffffff;--muted:#8b8b9e;
+      --card:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.08);
+      --radius:14px;--nav:72px;
+    }
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    h1,h2,h3{font-family:'Syne',sans-serif}
+
+    /* ── Views ── */
+    .view{display:none;min-height:100vh;padding-bottom:calc(var(--nav) + 16px)}
+    .view.active{display:block;animation:viewIn .32s ease forwards}
+    #view-onboarding.active{display:flex;flex-direction:column}
+    #view-chat.active{display:flex;flex-direction:column;height:100vh;padding-bottom:0}
+    @keyframes viewIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+    /* ── Cards ── */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:20px}
+
+    /* ── Bottom nav ── */
+    .bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:rgba(22,22,29,.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 8px;z-index:100}
+    .bottom-nav.hidden{display:none}
+    .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--muted);cursor:pointer;padding:7px 2px;border-radius:10px;font-size:9px;font-family:'Inter',sans-serif;transition:color .2s}
+    .nav-btn svg{width:20px;height:20px;transition:stroke .2s}
+
+    /* ── Rota ── */
+    .rota-nav{display:flex;align-items:center;justify-content:space-between;padding:0 20px 18px;gap:12px}
+    .rota-arrow{width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);flex-shrink:0;transition:background .2s}
+    .rota-arrow:hover{background:rgba(255,255,255,.1)}
+    .rota-week-label{flex:1;text-align:center;font-size:14px;font-weight:600;line-height:1.3}
+    .rota-days{padding:0 20px;display:flex;flex-direction:column;gap:8px}
+    .rota-day{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:12px;border:1px solid var(--border);background:var(--card);cursor:pointer;transition:all .18s;user-select:none}
+    .rota-day.is-work{border-color:rgba(255,80,80,.45);background:rgba(255,80,80,.08)}
+    .rota-day.is-free{border-color:rgba(0,230,118,.28);background:rgba(0,230,118,.06)}
+    .rota-day.is-today .rota-dname{color:var(--accent)}
+    .rota-dname{font-weight:600;font-size:15px}
+    .rota-ddate{font-size:12px;color:var(--muted);margin-top:2px}
+    .rota-status{font-size:13px;font-weight:500}
+    .rota-footer{padding:18px 20px 4px;display:flex;flex-direction:column;gap:10px}
+    .rota-legend{display:flex;gap:16px;font-size:12px;color:var(--muted);padding:0 2px}
+    .rota-banner{display:flex;align-items:center;gap:14px;padding:14px 18px;background:rgba(255,200,0,.07);border:1px solid rgba(255,200,0,.25);border-radius:var(--radius);cursor:pointer;transition:background .18s}
+    .rota-banner:hover{background:rgba(255,200,0,.12)}
+    .nav-btn.active{color:var(--accent)}
+
+    /* ── Form elements ── */
+    input,select,textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 16px;font-family:'Inter',sans-serif;font-size:15px;outline:none;transition:border-color .2s}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+    input[type=time]{color-scheme:dark}
+    select option{background:var(--bg2)}
+    textarea{resize:vertical;min-height:80px}
+    .label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500}
+    .form-group{margin-bottom:16px}
+
+    /* ── Buttons ── */
+    .btn{padding:13px 24px;border-radius:12px;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:15px;transition:all .2s}
+    .btn-primary{background:var(--accent);color:#000}
+    .btn-primary:hover{background:#00ff87;transform:translateY(-1px)}
+    .btn-secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid var(--border)}
+    .btn-secondary:hover{background:rgba(255,255,255,.12)}
+    .btn-danger{background:rgba(255,68,68,.12);color:#ff5555;border:1px solid rgba(255,68,68,.28)}
+    .btn-danger:hover{background:rgba(255,68,68,.22)}
+    .btn-full{width:100%}
+    .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+    /* ── Badges ── */
+    .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600}
+    .badge-green{background:var(--accent-dim);color:var(--accent)}
+    .badge-blue{background:var(--accent2-dim);color:var(--accent2)}
+
+    /* ── Radio chips ── */
+    .radio-group{display:flex;flex-wrap:wrap;gap:8px}
+    .radio-option{flex:1;min-width:90px}
+    .radio-option input{display:none}
+    .radio-option label{display:block;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);cursor:pointer;text-align:center;font-size:13px;font-weight:500;transition:all .2s;line-height:1.3}
+    .radio-option input:checked+label{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+
+    /* ── Overlay ── */
+    .overlay{position:fixed;inset:0;background:rgba(15,15,19,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:20px}
+    .overlay.hidden{display:none}
+    .spinner{width:46px;height:46px;border:3px solid rgba(0,230,118,.18);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Toast ── */
+    .toast{position:fixed;bottom:calc(var(--nav) + 16px);left:50%;transform:translateX(-50%) translateY(16px);background:rgba(28,28,36,.97);border:1px solid var(--border);backdrop-filter:blur(20px);padding:10px 22px;border-radius:40px;font-size:13px;font-weight:500;opacity:0;transition:all .28s;z-index:300;white-space:nowrap;pointer-events:none}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    /* ── Stagger entrance ── */
+    @keyframes staggerIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+    .stagger>*{opacity:0;animation:staggerIn .38s ease forwards}
+    .stagger>*:nth-child(1){animation-delay:.05s}.stagger>*:nth-child(2){animation-delay:.1s}
+    .stagger>*:nth-child(3){animation-delay:.15s}.stagger>*:nth-child(4){animation-delay:.2s}
+    .stagger>*:nth-child(5){animation-delay:.25s}.stagger>*:nth-child(6){animation-delay:.3s}
+    .stagger>*:nth-child(7){animation-delay:.35s}
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar{width:4px}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
+
+    /* ══════════════════════════════════════
+       ONBOARDING
+    ══════════════════════════════════════ */
+    #view-onboarding{padding:0;min-height:100vh}
+    .ob-header{padding:56px 24px 28px;text-align:center}
+    .app-logo{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--accent);letter-spacing:-.5px}
+    .ob-progress{display:flex;gap:6px;padding:0 24px 24px}
+    .ob-dot{flex:1;height:4px;border-radius:4px;background:var(--border);transition:background .3s}
+    .ob-dot.done{background:var(--accent)}
+    .ob-step{display:none;flex:1;padding:0 24px 16px;animation:viewIn .28s ease forwards}
+    .ob-step.active{display:block}
+    .step-title{font-size:22px;font-weight:800;margin-bottom:5px}
+    .step-sub{font-size:14px;color:var(--muted);margin-bottom:26px}
+    .ob-nav{display:flex;gap:12px;padding:16px 24px 48px}
+
+    /* ══════════════════════════════════════
+       VIEW HEADER
+    ══════════════════════════════════════ */
+    .view-header{padding:56px 20px 18px}
+    .view-header h1{font-size:26px}
+    .view-header .sub{color:var(--muted);font-size:14px;margin-top:4px}
+
+    /* ══════════════════════════════════════
+       HOME
+    ══════════════════════════════════════ */
+    .home-grid{padding:0 20px;display:flex;flex-direction:column;gap:14px}
+    .streak-bar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,176,255,.07));border:1px solid rgba(0,230,118,.18);border-radius:var(--radius)}
+    .streak-num{font-family:'Syne',sans-serif;font-size:36px;color:var(--accent);line-height:1}
+    .streak-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+    .workout-type{font-family:'Syne',sans-serif;font-size:20px;margin-bottom:3px}
+    .workout-meta{font-size:13px;color:var(--muted);margin-bottom:14px}
+    .ex-cards{display:flex;flex-direction:column;gap:10px}
+    .ex-card{display:flex;gap:12px;align-items:flex-start;padding:12px;background:rgba(255,255,255,.05);border-radius:12px;border:1px solid var(--border)}
+    .ex-art{width:96px;height:72px;flex-shrink:0;border-radius:8px;overflow:hidden;background:#0a100a}
+    .ex-art svg{width:100%;height:100%;display:block}
+    .ex-anim{position:relative;width:100%;height:100%}
+    .ex-anim img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:8px}
+    @keyframes ex-a{0%,38%{opacity:1}52%,88%{opacity:0}100%{opacity:1}}
+    @keyframes ex-b{0%,38%{opacity:0}52%,88%{opacity:1}100%{opacity:0}}
+    .ex-img-a{animation:ex-a 2.8s ease-in-out infinite}
+    .ex-img-b{animation:ex-b 2.8s ease-in-out infinite}
+    .ex-info{flex:1;min-width:0;padding-top:2px}
+    .ex-name{font-size:14px;font-weight:600;margin-bottom:4px}
+    .ex-sets{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:6px}
+    .ex-tip{font-size:11px;color:var(--muted);line-height:1.45}
+    .meal-items{display:flex;flex-direction:column;gap:11px}
+    .meal-item{display:flex;gap:14px;align-items:flex-start}
+    .meal-time{font-size:12px;font-weight:600;color:var(--accent);min-width:42px;padding-top:2px}
+    .meal-label{font-size:14px;font-weight:500}
+    .meal-guidance{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+    .water-glasses{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}
+    .glass-btn{width:38px;height:38px;border-radius:9px;border:2px solid var(--border);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;color:var(--muted)}
+    .glass-btn.filled{border-color:var(--accent2);background:var(--accent2-dim);color:var(--accent2)}
+    .water-meta{font-size:12px;color:var(--muted);margin-top:9px}
+    .calorie-row{display:flex;align-items:center;gap:18px}
+    .calorie-ring{position:relative;width:76px;height:76px;flex-shrink:0}
+    .calorie-ring svg{width:76px;height:76px;transform:rotate(-90deg)}
+    .ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .ring-val{font-family:'Syne',sans-serif;font-size:14px}
+    .ring-lbl{font-size:9px;color:var(--muted)}
+    .cal-num{font-family:'Syne',sans-serif;font-size:30px;color:var(--accent)}
+    .cal-sub{font-size:13px;color:var(--muted)}
+    .cal-def{font-size:13px;color:var(--accent2);margin-top:5px}
+    .sleep-row{display:flex;align-items:center;gap:16px}
+    .sleep-icon{font-size:30px}
+    .sleep-time{font-family:'Syne',sans-serif;font-size:24px}
+    .sleep-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+    /* ══════════════════════════════════════
+       PLAN
+    ══════════════════════════════════════ */
+    .plan-days{padding:0 20px;display:flex;flex-direction:column;gap:8px}
+    .day-acc{border-radius:var(--radius);border:1px solid var(--border);overflow:hidden}
+    .day-hdr{padding:15px 20px;background:rgba(255,255,255,.04);cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:background .18s;user-select:none}
+    .day-hdr:hover{background:rgba(255,255,255,.07)}
+    .day-name{font-weight:600;font-size:15px}
+    .day-focus{font-size:12px;color:var(--muted);margin-top:2px}
+    .day-chevron{transition:transform .28s;color:var(--muted);display:flex}
+    .day-acc.open .day-chevron{transform:rotate(180deg)}
+    .day-body{display:none;padding:16px 20px;background:var(--bg2);border-top:1px solid var(--border)}
+    .day-acc.open .day-body{display:block}
+    .rest-note{text-align:center;font-size:14px;color:var(--muted);font-style:italic;padding:10px 0}
+
+    /* ══════════════════════════════════════
+       CHAT
+    ══════════════════════════════════════ */
+    .chat-header{position:fixed;top:0;left:0;right:0;z-index:10;padding:16px 20px 14px;background:rgba(15,15,19,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+    .chat-messages{flex:1;overflow-y:auto;padding:76px 20px 12px;display:flex;flex-direction:column;gap:11px;scroll-behavior:smooth}
+    .chat-bubble{max-width:86%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.55;animation:bubbleIn .22s ease;white-space:pre-wrap;word-break:break-word}
+    @keyframes bubbleIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+    .chat-bubble.user{align-self:flex-end;background:var(--accent);color:#000;border-bottom-right-radius:4px}
+    .chat-bubble.bot{align-self:flex-start;background:rgba(255,255,255,.08);border:1px solid var(--border);border-bottom-left-radius:4px}
+    .chat-bubble.typing{display:flex;gap:5px;align-items:center;padding:14px 18px}
+    .t-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:tpulse 1.1s ease infinite}
+    .t-dot:nth-child(2){animation-delay:.18s}.t-dot:nth-child(3){animation-delay:.36s}
+    @keyframes tpulse{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+    .chat-input-bar{padding:10px 20px;padding-bottom:calc(var(--nav) + 10px);background:rgba(15,15,19,.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid var(--border);display:flex;gap:10px;align-items:flex-end}
+    .chat-input-bar textarea{flex:1;min-height:44px;max-height:120px;padding:11px 14px;resize:none;overflow-y:auto}
+    .send-btn{width:44px;height:44px;border-radius:12px;border:none;background:var(--accent);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;color:#000}
+    .send-btn:hover{background:#00ff87}
+
+    /* ══════════════════════════════════════
+       PROGRESS
+    ══════════════════════════════════════ */
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 20px 14px}
+    .stat-card{padding:14px;border-radius:var(--radius);background:var(--card);border:1px solid var(--border);text-align:center}
+    .stat-val{font-family:'Syne',sans-serif;font-size:20px;color:var(--accent)}
+    .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+    .chart-wrap{padding:0 20px 14px}
+    .chart-empty{height:160px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+    .weight-log{padding:0 20px}
+    .weight-input-row{display:flex;gap:10px;margin-bottom:14px}
+    .weight-input-row input{flex:1}
+    .w-entries{display:flex;flex-direction:column;gap:8px}
+    .w-entry{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:14px}
+    .entry-date{color:var(--muted);font-size:12px;margin-top:2px}
+    .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px;transition:color .18s;display:flex}
+    .del-btn:hover{color:#ff5555}
+
+    /* ══════════════════════════════════════
+       SETTINGS
+    ══════════════════════════════════════ */
+    .settings-body{padding:0 20px;display:flex;flex-direction:column;gap:14px}
+    .sec-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .settings-item{display:flex;flex-direction:column;gap:10px}
+
+    /* ── Utility ── */
+    .flex-between{display:flex;justify-content:space-between;align-items:center}
+    .mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mb12{margin-bottom:12px}
+    .text-muted{color:var(--muted)}.text-accent{color:var(--accent)}.text-sm{font-size:13px}
+
+    @media(min-width:600px){
+      .view,.bottom-nav{max-width:480px}
+      .view{margin:0 auto}
+      .bottom-nav{left:50%;transform:translateX(-50%)}
+    }
+  </style>
+</head>
+<body>
+
+<!-- Generating overlay -->
+<div class="overlay hidden" id="gen-overlay">
+  <div class="spinner"></div>
+  <div style="text-align:center">
+    <div style="font-family:'Syne',sans-serif;font-size:20px;margin-bottom:8px">Generating your plan…</div>
+    <div style="color:var(--muted);font-size:14px">Claude is crafting your personalised routine</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════
+     ONBOARDING
+══════════════════════════════════════ -->
+<div class="view active" id="view-onboarding">
+  <div class="ob-header">
+    <div class="app-logo">FitAI</div>
+    <p style="color:var(--muted);font-size:14px;margin-top:6px">Your AI-powered weight loss coach</p>
+  </div>
+
+  <div class="ob-progress">
+    <div class="ob-dot done" id="dot1"></div>
+    <div class="ob-dot" id="dot2"></div>
+    <div class="ob-dot" id="dot3"></div>
+    <div class="ob-dot" id="dot4"></div>
+  </div>
+
+  <!-- Step 1 -->
+  <div class="ob-step active" id="step1">
+    <h2 class="step-title">Let's get to know you</h2>
+    <p class="step-sub">Step 1 of 4 — Basic information</p>
+    <div class="form-group">
+      <label class="label">Your name</label>
+      <input type="text" id="ob-name" placeholder="e.g. Alex" autocomplete="given-name">
+    </div>
+    <div class="form-group">
+      <label class="label">Age</label>
+      <input type="number" id="ob-age" placeholder="e.g. 28" min="16" max="90">
+    </div>
+    <div class="form-group">
+      <label class="label">Gender</label>
+      <div class="radio-group">
+        <div class="radio-option"><input type="radio" name="gender" id="gm" value="Male"><label for="gm">Male</label></div>
+        <div class="radio-option"><input type="radio" name="gender" id="gf" value="Female"><label for="gf">Female</label></div>
+        <div class="radio-option"><input type="radio" name="gender" id="go" value="Other"><label for="go">Other</label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="ob-step" id="step2">
+    <h2 class="step-title">Your body & goal</h2>
+    <p class="step-sub">Step 2 of 4 — Weight & measurements</p>
+    <div class="form-group">
+      <label class="label">Current weight (kg)</label>
+      <input type="number" id="ob-cw" placeholder="e.g. 85" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="label">Target weight (kg)</label>
+      <input type="number" id="ob-tw" placeholder="e.g. 72" step="0.1">
+    </div>
+    <div class="form-group">
+      <label class="label">Timeframe (weeks)</label>
+      <input type="number" id="ob-wks" placeholder="e.g. 12" min="4" max="52">
+    </div>
+    <div class="form-group">
+      <label class="label">Height (cm)</label>
+      <input type="number" id="ob-ht" placeholder="e.g. 175">
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="ob-step" id="step3">
+    <h2 class="step-title">Lifestyle & diet</h2>
+    <p class="step-sub">Step 3 of 4 — Activity, food & equipment</p>
+    <div class="form-group">
+      <label class="label">Activity level</label>
+      <div class="radio-group" style="flex-direction:column">
+        <div class="radio-option" style="min-width:100%"><input type="radio" name="activity" id="as" value="Sedentary"><label for="as">Sedentary — desk job, little exercise</label></div>
+        <div class="radio-option" style="min-width:100%"><input type="radio" name="activity" id="al" value="Lightly Active"><label for="al">Lightly Active — 1–3 days/week</label></div>
+        <div class="radio-option" style="min-width:100%"><input type="radio" name="activity" id="am" value="Moderately Active"><label for="am">Moderately Active — 3–5 days/week</label></div>
+        <div class="radio-option" style="min-width:100%"><input type="radio" name="activity" id="av" value="Very Active"><label for="av">Very Active — 6–7 days/week</label></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="label">Diet preference</label>
+      <select id="ob-diet">
+        <option value="No restriction">No restriction</option>
+        <option value="Vegetarian">Vegetarian</option>
+        <option value="Vegan">Vegan</option>
+        <option value="Pescatarian">Pescatarian</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="label">Food allergies / intolerances</label>
+      <input type="text" id="ob-allergy" placeholder="e.g. lactose, nuts (or leave blank)">
+    </div>
+    <div class="form-group">
+      <label class="label">Equipment access</label>
+      <div class="radio-group">
+        <div class="radio-option"><input type="radio" name="equip" id="eh" value="Home only"><label for="eh">Home only</label></div>
+        <div class="radio-option"><input type="radio" name="equip" id="eg" value="Gym"><label for="eg">Gym</label></div>
+        <div class="radio-option"><input type="radio" name="equip" id="eb" value="Both"><label for="eb">Both</label></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="ob-step" id="step4">
+    <h2 class="step-title">Schedule & health</h2>
+    <p class="step-sub">Step 4 of 4 — Sleep, routine & conditions</p>
+    <div class="form-group">
+      <label class="label">Wake time</label>
+      <input type="time" id="ob-wake" value="07:00">
+    </div>
+    <div class="form-group">
+      <label class="label">Bedtime</label>
+      <input type="time" id="ob-bed" value="23:00">
+    </div>
+    <div class="form-group">
+      <label class="label">Work schedule</label>
+      <input type="text" id="ob-work" placeholder="e.g. 9–5, shift work, flexible">
+    </div>
+    <div class="form-group">
+      <label class="label">Injuries or health conditions <span class="text-muted">(optional)</span></label>
+      <textarea id="ob-conditions" placeholder="e.g. bad knee, lower back pain"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="label">Anthropic API Key</label>
+      <input type="password" id="ob-apikey" placeholder="sk-ant-…">
+      <p class="text-sm text-muted mt8">Stored on your device only. Never sent anywhere except the Anthropic API.</p>
+    </div>
+  </div>
+
+  <div class="ob-nav">
+    <button class="btn btn-secondary" id="ob-back" onclick="obBack()" style="display:none">Back</button>
+    <button class="btn btn-primary btn-full" id="ob-next" onclick="obNext()">Continue</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     HOME
+══════════════════════════════════════ -->
+<div class="view" id="view-home">
+  <div class="view-header">
+    <h1 id="home-greeting">Good morning</h1>
+    <p class="sub" id="home-date"></p>
+  </div>
+  <div class="home-grid stagger" id="home-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PLAN
+══════════════════════════════════════ -->
+<div class="view" id="view-plan">
+  <div class="view-header">
+    <h1>7-Day Plan</h1>
+    <p class="sub">Tap a day to expand</p>
+  </div>
+  <div class="plan-days" id="plan-days"></div>
+</div>
+
+<!-- ══════════════════════════════════════
+     CHAT
+══════════════════════════════════════ -->
+<div class="view" id="view-chat">
+  <div class="chat-header">
+    <h2 style="font-size:18px">AI Coach</h2>
+    <p style="font-size:12px;color:var(--muted);margin-top:2px">Ask anything about your plan</p>
+  </div>
+  <div class="chat-messages" id="chat-msgs"></div>
+  <div class="chat-input-bar">
+    <textarea id="chat-in" placeholder="Ask your coach…" rows="1"></textarea>
+    <button class="send-btn" onclick="sendChat()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     PROGRESS
+══════════════════════════════════════ -->
+<div class="view" id="view-progress">
+  <div class="view-header">
+    <h1>Progress</h1>
+    <p class="sub">Track your weight loss journey</p>
+  </div>
+  <div class="stats-grid stagger" id="prog-stats"></div>
+  <div class="chart-wrap">
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:12px">Weight Over Time</h3>
+      <div id="chart-inner"></div>
+    </div>
+  </div>
+  <div class="weight-log">
+    <h3 style="font-size:15px;margin-bottom:12px">Log Weight</h3>
+    <div class="weight-input-row">
+      <input type="number" id="w-in" placeholder="e.g. 83.5" step="0.1">
+      <button class="btn btn-primary" onclick="logWeight()">Add</button>
+    </div>
+    <div class="w-entries" id="w-entries"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SETTINGS
+══════════════════════════════════════ -->
+<div class="view" id="view-settings">
+  <div class="view-header">
+    <h1>Settings</h1>
+    <p class="sub">Manage your profile & data</p>
+  </div>
+  <div class="settings-body">
+    <div class="card">
+      <div class="sec-title">API Configuration</div>
+      <div class="settings-item">
+        <label class="label">Anthropic API Key</label>
+        <input type="password" id="s-apikey" placeholder="sk-ant-…">
+        <button class="btn btn-primary" onclick="saveApiKey()">Save Key</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Profile</div>
+      <div class="settings-item">
+        <div id="s-profile" style="font-size:14px;color:var(--muted);margin-bottom:4px"></div>
+        <button class="btn btn-secondary btn-full" onclick="editProfile()">Edit Profile</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Plan</div>
+      <div class="settings-item">
+        <button class="btn btn-secondary btn-full" onclick="regenPlan()">Regenerate Plan</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Data</div>
+      <div class="settings-item">
+        <button class="btn btn-danger btn-full" onclick="clearAll()">Clear All Data</button>
+        <p class="text-sm text-muted">Deletes your profile, plan, and all progress data.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ROTA VIEW
+══════════════════════════════════════ -->
+<div class="view" id="view-rota">
+  <div class="view-header">
+    <h1>My Rota</h1>
+    <p class="sub">Mark your work days — workouts go on free days</p>
+  </div>
+
+  <div class="rota-nav">
+    <button class="rota-arrow" onclick="rotaNav(-1)" title="Previous week">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="rota-week-label" id="rota-week-label">Loading…</div>
+    <button class="rota-arrow" onclick="rotaNav(1)" title="Next week">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+
+  <div class="rota-days" id="rota-days"></div>
+
+  <div class="rota-footer">
+    <div class="rota-legend">
+      <span>🔴 Work day — no workout scheduled</span>
+      <span>🟢 Free day — workout goes here</span>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveRota()">Save This Week's Rota</button>
+    <p class="text-sm text-muted" style="text-align:center">Changes also update your weekly plan suggestions</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     BOTTOM NAV
+══════════════════════════════════════ -->
+<nav class="bottom-nav hidden" id="bottom-nav">
+  <button class="nav-btn active" onclick="goTo('home')" id="nav-home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>Home
+  </button>
+  <button class="nav-btn" onclick="goTo('plan')" id="nav-plan">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>Plan
+  </button>
+  <button class="nav-btn" onclick="goTo('chat')" id="nav-chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>Chat
+  </button>
+  <button class="nav-btn" onclick="goTo('progress')" id="nav-progress">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>Progress
+  </button>
+  <button class="nav-btn" onclick="goTo('rota')" id="nav-rota">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+      <circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/>
+    </svg>Rota
+  </button>
+  <button class="nav-btn" onclick="goTo('settings')" id="nav-settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>Settings
+  </button>
+</nav>
+
+<script>
+// ══════════════════════════════════════
+// STORAGE
+// ══════════════════════════════════════
+const S = {
+  get apiKey()    { return localStorage.getItem('wl_api_key') || '' },
+  get profile()   { return JSON.parse(localStorage.getItem('wl_profile') || 'null') },
+  get plan()      { return JSON.parse(localStorage.getItem('wl_plan') || 'null') },
+  get weights()   { return JSON.parse(localStorage.getItem('wl_weights') || '[]') },
+  get streak()    { return parseInt(localStorage.getItem('wl_streak') || '0') },
+  get lastVisit() { return localStorage.getItem('wl_last_visit') || '' },
+  get water()     { return parseInt(localStorage.getItem('wl_water_today') || '0') },
+  put(k, v)       { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)) }
+};
+
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let chatHistory = [];
+let obStep = 1;
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+function init() {
+  const today = new Date().toDateString();
+  // Reset water before updateStreak sets lastVisit to today
+  if (S.lastVisit !== today) S.put('wl_water_today', 0);
+  updateStreak();
+
+  const profile = S.profile;
+  const plan    = S.plan;
+
+  if (profile && plan) {
+    showApp();
+    renderHome();
+    renderPlan();
+  } else if (profile && !plan) {
+    showApp();
+    generatePlan(profile);
+  }
+  // else: stay on onboarding
+}
+
+function showApp() {
+  document.getElementById('bottom-nav').classList.remove('hidden');
+  goTo('home');
+  ensureExerciseDB();
+}
+
+// ══════════════════════════════════════
+// VIEW NAVIGATION
+// ══════════════════════════════════════
+function goTo(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const nb = document.getElementById('nav-' + name);
+  if (nb) nb.classList.add('active');
+
+  if (name === 'home')     renderHome();
+  if (name === 'plan')     renderPlan();
+  if (name === 'progress') renderProgress();
+  if (name === 'settings') renderSettings();
+  if (name === 'rota')     renderRota();
+  if (name === 'chat') {
+    setTimeout(() => {
+      const m = document.getElementById('chat-msgs');
+      m.scrollTop = m.scrollHeight;
+    }, 80);
+  }
+}
+
+// ══════════════════════════════════════
+// ONBOARDING
+// ══════════════════════════════════════
+function obNext() {
+  if (!validateStep(obStep)) return;
+  if (obStep < 4) { obStep++; renderObStep(); }
+  else submitOb();
+}
+function obBack() {
+  if (obStep > 1) { obStep--; renderObStep(); }
+}
+function renderObStep() {
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('step' + obStep).classList.add('active');
+  for (let i = 1; i <= 4; i++)
+    document.getElementById('dot' + i).classList.toggle('done', i <= obStep);
+  document.getElementById('ob-back').style.display = obStep > 1 ? '' : 'none';
+  document.getElementById('ob-next').textContent = obStep === 4 ? 'Generate My Plan' : 'Continue';
+}
+function validateStep(n) {
+  const toast = msg => { showToast(msg); return false; };
+  if (n === 1) {
+    if (!document.getElementById('ob-name').value.trim()) return toast('Please enter your name');
+    if (!document.getElementById('ob-age').value) return toast('Please enter your age');
+    if (!document.querySelector('input[name="gender"]:checked')) return toast('Please select a gender');
+  }
+  if (n === 2) {
+    if (!document.getElementById('ob-cw').value) return toast('Please enter your current weight');
+    if (!document.getElementById('ob-tw').value) return toast('Please enter your target weight');
+    if (!document.getElementById('ob-wks').value) return toast('Please enter a timeframe');
+    if (!document.getElementById('ob-ht').value) return toast('Please enter your height');
+  }
+  if (n === 3) {
+    if (!document.querySelector('input[name="activity"]:checked')) return toast('Please select your activity level');
+    if (!document.querySelector('input[name="equip"]:checked')) return toast('Please select your equipment access');
+  }
+  if (n === 4) {
+    if (!document.getElementById('ob-apikey').value.trim()) return toast('Please enter your Anthropic API key');
+  }
+  return true;
+}
+function submitOb() {
+  const profile = {
+    name:       document.getElementById('ob-name').value.trim(),
+    age:        +document.getElementById('ob-age').value,
+    gender:     document.querySelector('input[name="gender"]:checked').value,
+    weight:     +document.getElementById('ob-cw').value,
+    target:     +document.getElementById('ob-tw').value,
+    weeks:      +document.getElementById('ob-wks').value,
+    height:     +document.getElementById('ob-ht').value,
+    activity:   document.querySelector('input[name="activity"]:checked').value,
+    diet:       document.getElementById('ob-diet').value,
+    allergies:  document.getElementById('ob-allergy').value.trim(),
+    equipment:  document.querySelector('input[name="equip"]:checked').value,
+    wakeTime:   document.getElementById('ob-wake').value,
+    bedTime:    document.getElementById('ob-bed').value,
+    workSched:  document.getElementById('ob-work').value.trim(),
+    conditions: document.getElementById('ob-conditions').value.trim()
+  };
+  S.put('wl_api_key', document.getElementById('ob-apikey').value.trim());
+  S.put('wl_profile', profile);
+  generatePlan(profile);
+}
+
+// ══════════════════════════════════════
+// CLAUDE API
+// ══════════════════════════════════════
+async function callClaude(messages, system, maxTokens = 4096) {
+  const key = S.apiKey;
+  if (!key) throw new Error('No API key. Add one in Settings.');
+  const body = { model: 'claude-sonnet-4-5', max_tokens: maxTokens, messages };
+  if (system) body.system = system;
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e.error?.message || 'API error ' + r.status);
+  }
+  const d = await r.json();
+  return d.content[0].text;
+}
+
+// ══════════════════════════════════════
+// PLAN GENERATION
+// ══════════════════════════════════════
+async function generatePlan(profile) {
+  document.getElementById('gen-overlay').classList.remove('hidden');
+
+  const sys = `You are an expert personal trainer, nutritionist, and wellness coach. Return ONLY valid JSON — no markdown, no code fences, no explanation, no preamble. Just the raw JSON object.`;
+
+  const prompt = `Generate a fully personalised weight loss plan for:
+${JSON.stringify(profile, null, 2)}
+
+Return exactly this JSON structure (fill every field with real, personalised data):
+{
+  "summary": "2-3 sentence personalised overview",
+  "calories": { "daily_target": 1800, "deficit": 500 },
+  "meal_schedule": [
+    { "time": "07:30", "label": "Breakfast", "guidance": "High protein, e.g. scrambled eggs and oats" },
+    { "time": "12:30", "label": "Lunch", "guidance": "..." },
+    { "time": "18:00", "label": "Dinner", "guidance": "..." }
+  ],
+  "hydration": { "daily_litres": 2.5, "schedule": ["07:00","10:00","13:00","16:00","19:00"] },
+  "sleep": { "target_bedtime": "22:30", "target_wake": "06:30", "note": "Brief sleep + weight loss tip" },
+  "weekly_plan": [
+    {
+      "day": "Monday",
+      "rest": false,
+      "focus": "Upper body + core",
+      "workout": {
+        "type": "Strength",
+        "duration_minutes": 45,
+        "exercises": [
+          { "name": "Push-ups", "sets": 3, "reps": 12 },
+          { "name": "Squats", "sets": 3, "reps": 15 }
+        ]
+      }
+    }
+  ],
+  "extra_tips": ["Tip 1", "Tip 2", "Tip 3"]
+}
+
+Include ALL 7 days (Monday–Sunday). Mark rest days with "rest": true (omit or empty exercises). Match equipment (${profile.equipment}), diet (${profile.diet}), allergies (${profile.allergies || 'none'}), conditions (${profile.conditions || 'none'}).${rotaContextForPrompt()}`;
+
+  try {
+    let raw = await callClaude([{ role: 'user', content: prompt }], sys, 4096);
+    raw = raw.trim()
+      .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '');
+    const plan = JSON.parse(raw);
+    S.put('wl_plan', plan);
+    document.getElementById('gen-overlay').classList.add('hidden');
+    showApp();
+    renderHome();
+    renderPlan();
+    initChat();
+    showToast('Your plan is ready!');
+  } catch (err) {
+    document.getElementById('gen-overlay').classList.add('hidden');
+    showToast('Error: ' + err.message);
+    console.error(err);
+  }
+}
+
+// ══════════════════════════════════════
+// HOME
+// ══════════════════════════════════════
+function renderHome() {
+  const plan    = S.plan;
+  const profile = S.profile;
+  if (!plan || !profile) return;
+
+  const now  = new Date();
+  const hr   = now.getHours();
+  const gr   = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('home-greeting').textContent = `${gr}, ${profile.name}`;
+  document.getElementById('home-date').textContent = now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' });
+
+  const dayName  = now.toLocaleDateString('en-GB', { weekday: 'long' });
+  const todayDay = plan.weekly_plan?.find(d => d.day === dayName) || plan.weekly_plan?.[0];
+  const water    = S.water;
+  const streak   = S.streak;
+  const glasses  = plan.hydration?.schedule?.length || 8;
+
+  const rotaBanner = !isRotaSetThisWeek() ? `
+    <div class="rota-banner" onclick="goTo('rota')">
+      <div style="font-size:22px;flex-shrink:0">📅</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;margin-bottom:2px">Set this week's rota</div>
+        <div style="font-size:12px;color:var(--muted)">Mark your work days so workouts land on your free days</div>
+      </div>
+      <div style="color:var(--muted);font-size:18px">›</div>
+    </div>` : '';
+
+  document.getElementById('home-content').innerHTML = `
+    ${rotaBanner}
+    <div class="streak-bar">
+      <div><div class="streak-num">${streak}</div><div class="streak-lbl">day streak 🔥</div></div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:600">${profile.weight} kg → ${profile.target} kg</div>
+        <div style="font-size:12px;color:var(--muted)">${profile.weeks}-week goal</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="calorie-row">
+        <div class="calorie-ring">
+          <svg viewBox="0 0 76 76"><circle cx="38" cy="38" r="30" fill="none" stroke="rgba(0,230,118,.15)" stroke-width="8"/>
+          <circle cx="38" cy="38" r="30" fill="none" stroke="#00e676" stroke-width="8"
+            stroke-dasharray="${2*Math.PI*30}" stroke-dashoffset="${2*Math.PI*30*0.28}"
+            stroke-linecap="round"/></svg>
+          <div class="ring-center"><span class="ring-val">${plan.calories?.daily_target||'—'}</span><span class="ring-lbl">kcal</span></div>
+        </div>
+        <div>
+          <div class="cal-num">${plan.calories?.daily_target||'—'}</div>
+          <div class="cal-sub">daily calorie target</div>
+          <div class="cal-def">−${plan.calories?.deficit||'—'} kcal deficit</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="flex-between mb12">
+        <div>
+          <div class="workout-type">${todayDay?.rest ? 'Rest Day' : (todayDay?.workout?.type||'Workout')}</div>
+          <div class="workout-meta">${todayDay?.rest ? 'Recovery & light stretching' : `${todayDay?.workout?.duration_minutes||0} min · ${todayDay?.focus||''}`}</div>
+        </div>
+        <span class="badge ${todayDay?.rest?'badge-blue':'badge-green'}">${todayDay?.day||dayName}</span>
+      </div>
+      ${!todayDay?.rest && todayDay?.workout?.exercises?.length ? `
+      <div class="ex-cards">${todayDay.workout.exercises.map(renderExCard).join('')}</div>` : todayDay?.rest ? `<p class="text-sm text-muted" style="text-align:center;padding:6px 0">Take it easy — eat well, hydrate, and recover.</p>` : ''}
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:12px">Today's Meals</h3>
+      <div class="meal-items">${(plan.meal_schedule||[]).map(m=>`
+        <div class="meal-item">
+          <div class="meal-time">${m.time}</div>
+          <div><div class="meal-label">${m.label}</div><div class="meal-guidance">${m.guidance}</div></div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:15px;margin-bottom:10px">Hydration</h3>
+      <div class="water-glasses" id="glasses">${buildGlasses(glasses,water)}</div>
+      <p class="water-meta" id="water-meta">${water} of ${glasses} glasses · ${plan.hydration?.daily_litres||2}L goal</p>
+    </div>
+
+    <div class="card">
+      <div class="sleep-row">
+        <div class="sleep-icon">🌙</div>
+        <div>
+          <div class="sleep-time">${plan.sleep?.target_bedtime||'—'}</div>
+          <div class="sleep-sub">target bedtime · wake at ${plan.sleep?.target_wake||'—'}</div>
+          ${plan.sleep?.note?`<p class="text-sm text-muted mt8">${plan.sleep.note}</p>`:''}
+        </div>
+      </div>
+    </div>
+
+    ${plan.extra_tips?.length?`<div class="card">
+      <h3 style="font-size:15px;margin-bottom:10px">Tips</h3>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:8px">${plan.extra_tips.map(t=>`
+        <li style="font-size:13px;color:var(--muted);padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--accent)">›</span>${t}</li>`).join('')}
+      </ul></div>`:''}
+  `;
+}
+
+function buildGlasses(total, filled) {
+  let h = '';
+  for (let i = 0; i < total; i++) {
+    h += `<button class="glass-btn${i<filled?' filled':''}" onclick="tapGlass(${i})" title="Glass ${i+1}">
+      <svg width="14" height="18" viewBox="0 0 14 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M1 1h12l-1.2 13.5a1 1 0 0 1-1 .5H3.2a1 1 0 0 1-1-.5L1 1z"/>
+      </svg></button>`;
+  }
+  return h;
+}
+
+function tapGlass(idx) {
+  const plan    = S.plan;
+  const total   = plan?.hydration?.schedule?.length || 8;
+  let water     = S.water;
+  water = (idx < water) ? idx : idx + 1;
+  water = Math.max(0, Math.min(water, total));
+  S.put('wl_water_today', water);
+  const g = document.getElementById('glasses');
+  if (g) {
+    g.innerHTML = buildGlasses(total, water);
+    document.getElementById('water-meta').textContent =
+      `${water} of ${total} glasses · ${plan.hydration?.daily_litres||2}L goal`;
+  }
+}
+
+// ══════════════════════════════════════
+// PLAN
+// ══════════════════════════════════════
+function renderPlan() {
+  const plan = S.plan;
+  if (!plan?.weekly_plan) return;
+  const today = new Date().toLocaleDateString('en-GB',{weekday:'long'});
+  document.getElementById('plan-days').innerHTML = plan.weekly_plan.map((d,i) => `
+    <div class="day-acc" id="dacc${i}">
+      <div class="day-hdr" onclick="toggleDay(${i})">
+        <div>
+          <div class="day-name">${d.day}${d.day===today?' <span style="font-size:11px;color:var(--accent)">(today)</span>':''}</div>
+          <div class="day-focus">${d.rest?'Rest Day':d.focus||d.workout?.type||''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="badge ${d.rest?'badge-blue':'badge-green'}">${d.rest?'Rest':(d.workout?.duration_minutes||0)+'min'}</span>
+          <div class="day-chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+      </div>
+      <div class="day-body">
+        ${d.rest ? `<p class="rest-note">Rest day — recovery, hydration, and good sleep.</p>` : `
+        <span class="badge badge-green mb12" style="display:inline-block">${d.workout?.type||'Workout'} · ${d.workout?.duration_minutes||0} min</span>
+        ${d.workout?.exercises?.length?`<div class="ex-cards mt12">${d.workout.exercises.map(renderExCard).join('')}</div>`:''}
+        `}
+      </div>
+    </div>`).join('');
+
+  // Auto-open today
+  const ti = plan.weekly_plan.findIndex(d => d.day === today);
+  if (ti >= 0) toggleDay(ti);
+}
+function toggleDay(i) {
+  document.getElementById('dacc'+i).classList.toggle('open');
+}
+
+// ══════════════════════════════════════
+// CHAT
+// ══════════════════════════════════════
+function initChat() {
+  chatHistory = [];
+  const p = S.profile;
+  addBubble('bot',
+    `Hi ${p?.name||'there'}! I'm your AI weight loss coach. Your plan is loaded — ask me anything.\n\nTry:\n• "Swap Wednesday's workout"\n• "I don't like chicken, suggest alternatives"\n• "Why is sleep important for weight loss?"`
+  );
+}
+function getChatSystem() {
+  return `You are a friendly, expert personal trainer, nutritionist, and wellness coach. The user has the following profile and plan:
+
+PROFILE: ${JSON.stringify(S.profile)}
+PLAN: ${JSON.stringify(S.plan)}
+
+Help the user refine their plan, answer questions, suggest alternatives, and provide motivation. Keep responses concise and practical.`;
+}
+function addBubble(role, text) {
+  const msgs = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'chat-bubble ' + role;
+  d.textContent = text;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function showTyping() {
+  const msgs = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'chat-bubble bot typing';
+  d.id = 'typing';
+  d.innerHTML = '<div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>';
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+async function sendChat() {
+  const inp = document.getElementById('chat-in');
+  const txt = inp.value.trim();
+  if (!txt) return;
+  inp.value = '';
+  inp.style.height = '';
+  addBubble('user', txt);
+  chatHistory.push({ role:'user', content:txt });
+  showTyping();
+  try {
+    const reply = await callClaude(chatHistory, getChatSystem(), 1024);
+    removeTyping();
+    addBubble('bot', reply);
+    chatHistory.push({ role:'assistant', content:reply });
+  } catch(err) {
+    removeTyping();
+    addBubble('bot', 'Sorry, error: ' + err.message);
+  }
+}
+document.getElementById('chat-in').addEventListener('input', function() {
+  this.style.height = '';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+document.getElementById('chat-in').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+});
+
+// ══════════════════════════════════════
+// PROGRESS
+// ══════════════════════════════════════
+function renderProgress() {
+  const profile  = S.profile;
+  const weights  = S.weights;
+  const streak   = S.streak;
+  if (!profile) return;
+
+  const start    = profile.weight;
+  const target   = profile.target;
+  const current  = weights.length ? weights[weights.length-1].weight : start;
+  const lost     = +(start - current).toFixed(1);
+  const toGo     = +Math.max(0, current - target).toFixed(1);
+
+  document.getElementById('prog-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${start}</div><div class="stat-lbl">Start kg</div></div>
+    <div class="stat-card"><div class="stat-val">${current.toFixed(1)}</div><div class="stat-lbl">Current kg</div></div>
+    <div class="stat-card"><div class="stat-val">${target}</div><div class="stat-lbl">Target kg</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${lost>=0?'var(--accent)':'#ff5555'}">${lost>=0?'-':'+'}${Math.abs(lost)}</div><div class="stat-lbl">Lost kg</div></div>
+    <div class="stat-card"><div class="stat-val">${toGo}</div><div class="stat-lbl">To go kg</div></div>
+    <div class="stat-card"><div class="stat-val">${streak}</div><div class="stat-lbl">Streak 🔥</div></div>
+  `;
+
+  renderChart(weights, start, target);
+  renderEntries(weights);
+}
+
+function renderChart(weights, startW, targetW) {
+  const el = document.getElementById('chart-inner');
+  if (weights.length < 2) {
+    el.innerHTML = '<div class="chart-empty">Log at least 2 weights to see your chart</div>';
+    return;
+  }
+  const W=320, H=160, pad={t:12,r:24,b:28,l:38};
+  const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+  const vals=[...weights.map(w=>w.weight), targetW, startW];
+  const mn=Math.min(...vals)-1, mx=Math.max(...vals)+1;
+  const xS=i=>pad.l+(i/(weights.length-1))*cW;
+  const yS=v=>pad.t+cH-((v-mn)/(mx-mn))*cH;
+  const pts=weights.map((w,i)=>`${xS(i)},${yS(w.weight)}`).join(' ');
+  const fill=`${pad.l},${pad.t+cH} ${pts} ${xS(weights.length-1)},${pad.t+cH}`;
+  const tY=yS(targetW);
+  let yLbls='', xLbls='';
+  for(let i=0;i<=4;i++){
+    const v=mn+(mx-mn)*(i/4);
+    yLbls+=`<text x="${pad.l-5}" y="${yS(v)+4}" text-anchor="end" font-size="9" fill="#8b8b9e">${v.toFixed(0)}</text>`;
+  }
+  const step=Math.max(1,Math.ceil(weights.length/4));
+  weights.forEach((w,i)=>{
+    if(i%step===0||i===weights.length-1){
+      const d=new Date(w.date);
+      xLbls+=`<text x="${xS(i)}" y="${H-4}" text-anchor="middle" font-size="9" fill="#8b8b9e">${d.getDate()}/${d.getMonth()+1}</text>`;
+    }
+  });
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="overflow:visible">
+    <defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00e676" stop-opacity=".7"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </linearGradient></defs>
+    <line x1="${pad.l}" y1="${tY}" x2="${W-pad.r}" y2="${tY}" stroke="#00b0ff" stroke-width="1.5" stroke-dasharray="4 3" opacity=".6"/>
+    <text x="${W-pad.r+3}" y="${tY+4}" font-size="8" fill="#00b0ff">${targetW}kg</text>
+    <polygon points="${fill}" fill="url(#lg)" opacity=".3"/>
+    <polyline points="${pts}" fill="none" stroke="#00e676" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    ${weights.map((w,i)=>`<circle cx="${xS(i)}" cy="${yS(w.weight)}" r="3.5" fill="#00e676"/>`).join('')}
+    ${yLbls}${xLbls}
+    <line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t+cH}" stroke="#2a2a35" stroke-width="1"/>
+    <line x1="${pad.l}" y1="${pad.t+cH}" x2="${W-pad.r}" y2="${pad.t+cH}" stroke="#2a2a35" stroke-width="1"/>
+  </svg>`;
+}
+
+function renderEntries(weights) {
+  const el = document.getElementById('w-entries');
+  if (!weights.length) {
+    el.innerHTML = '<p class="text-sm text-muted" style="text-align:center;padding:14px">No entries yet. Log your first weight above.</p>';
+    return;
+  }
+  el.innerHTML = [...weights].reverse().map((w, ri) => {
+    const i = weights.length - 1 - ri;
+    return `<div class="w-entry">
+      <div>
+        <div style="font-weight:600">${w.weight} kg</div>
+        <div class="entry-date">${new Date(w.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+      </div>
+      <button class="del-btn" onclick="delWeight(${i})" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+        </svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function logWeight() {
+  const v = parseFloat(document.getElementById('w-in').value);
+  if (!v || v < 20 || v > 500) { showToast('Enter a valid weight'); return; }
+  const ws = S.weights;
+  ws.push({ date: new Date().toISOString(), weight: v });
+  S.put('wl_weights', ws);
+  document.getElementById('w-in').value = '';
+  renderProgress();
+  showToast('Weight logged!');
+}
+function delWeight(i) {
+  const ws = S.weights;
+  ws.splice(i, 1);
+  S.put('wl_weights', ws);
+  renderProgress();
+}
+
+// ══════════════════════════════════════
+// SETTINGS
+// ══════════════════════════════════════
+function renderSettings() {
+  document.getElementById('s-apikey').value = S.apiKey;
+  const p = S.profile;
+  document.getElementById('s-profile').innerHTML = p
+    ? `<strong>${p.name}</strong>, ${p.age} · ${p.weight}kg → ${p.target}kg over ${p.weeks} weeks<br>${p.diet} · ${p.activity} · ${p.equipment}`
+    : 'No profile yet.';
+}
+function saveApiKey() {
+  const k = document.getElementById('s-apikey').value.trim();
+  if (!k) { showToast('Enter an API key'); return; }
+  S.put('wl_api_key', k);
+  showToast('API key saved!');
+}
+function editProfile() {
+  const p = S.profile;
+  if (!p) return;
+  document.getElementById('ob-name').value   = p.name  || '';
+  document.getElementById('ob-age').value    = p.age   || '';
+  document.getElementById('ob-cw').value     = p.weight|| '';
+  document.getElementById('ob-tw').value     = p.target|| '';
+  document.getElementById('ob-wks').value    = p.weeks || '';
+  document.getElementById('ob-ht').value     = p.height|| '';
+  document.getElementById('ob-allergy').value= p.allergies|| '';
+  document.getElementById('ob-work').value   = p.workSched||'';
+  document.getElementById('ob-conditions').value = p.conditions||'';
+  document.getElementById('ob-wake').value   = p.wakeTime||'07:00';
+  document.getElementById('ob-bed').value    = p.bedTime||'23:00';
+  document.getElementById('ob-diet').value   = p.diet  ||'No restriction';
+  document.getElementById('ob-apikey').value = S.apiKey;
+  const gEl = document.querySelector(`input[name="gender"][value="${p.gender}"]`);
+  if (gEl) gEl.checked = true;
+  const aEl = document.querySelector(`input[name="activity"][value="${p.activity}"]`);
+  if (aEl) aEl.checked = true;
+  const eEl = document.querySelector(`input[name="equip"][value="${p.equipment}"]`);
+  if (eEl) eEl.checked = true;
+  obStep = 1;
+  renderObStep();
+  document.getElementById('bottom-nav').classList.add('hidden');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-onboarding').classList.add('active');
+}
+async function regenPlan() {
+  if (!confirm('Regenerate your plan? This replaces your current plan.')) return;
+  const p = S.profile;
+  if (!p) { showToast('No profile found'); return; }
+  await generatePlan(p);
+}
+function clearAll() {
+  if (!confirm('Delete all data? This cannot be undone.')) return;
+  ['wl_api_key','wl_profile','wl_plan','wl_weights','wl_streak','wl_last_visit','wl_water_today']
+    .forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+// ══════════════════════════════════════
+// STREAK
+// ══════════════════════════════════════
+function updateStreak() {
+  const today = new Date().toDateString();
+  const last  = S.lastVisit;
+  if (last === today) return;
+  const yest = new Date(); yest.setDate(yest.getDate()-1);
+  let streak = S.streak;
+  streak = (last === yest.toDateString()) ? streak+1 : 1;
+  S.put('wl_streak', streak);
+  S.put('wl_last_visit', today);
+}
+
+// ══════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════
+// ROTA
+// ══════════════════════════════════════
+let rotaWeekStart = null;
+let rotaEdits = {}; // weekKey -> Set<isoDate> of work days (unsaved live edits)
+let _lastUKDate  = '';
+
+// Returns a Date object representing today's date in the UK (Europe/London),
+// set to local midnight — safe during both GMT (UTC+0) and BST (UTC+1).
+function getUKNow() {
+  const ukStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+  const [y, m, d] = ukStr.split('-').map(Number);
+  return new Date(y, m - 1, d, 0, 0, 0, 0);
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return d;
+}
+// Use local date parts — never toISOString() which silently converts to UTC.
+function isoDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function rotaKey(d) { return isoDate(getWeekStart(d)); }
+
+// Re-render the rota (and home banner) whenever the UK date ticks over.
+setInterval(() => {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+  if (today !== _lastUKDate && _lastUKDate !== '') {
+    _lastUKDate = today;
+    const active = document.querySelector('.view.active')?.id;
+    if (active === 'view-rota') renderRota();
+    if (active === 'view-home') renderHome();
+  } else {
+    _lastUKDate = today;
+  }
+}, 30000); // check every 30 s — catches midnight rollover quickly
+
+function getRotaForWeek(wk) {
+  if (rotaEdits[wk] !== undefined) return rotaEdits[wk];
+  const saved = JSON.parse(localStorage.getItem('wl_rota') || '{}');
+  return new Set(saved[wk] || []);
+}
+
+function currentWeekWorkDays() {
+  const wk = rotaKey(getUKNow());
+  const saved = JSON.parse(localStorage.getItem('wl_rota') || '{}');
+  return saved[wk] || [];
+}
+
+function isRotaSetThisWeek() {
+  const wk = rotaKey(getUKNow());
+  const saved = JSON.parse(localStorage.getItem('wl_rota') || '{}');
+  return wk in saved;
+}
+
+function renderRota() {
+  if (!rotaWeekStart) rotaWeekStart = getWeekStart(getUKNow());
+  const wk = isoDate(rotaWeekStart);
+  const workDays = getRotaForWeek(wk);
+  const todayIso = isoDate(getUKNow());
+
+  const end = new Date(rotaWeekStart);
+  end.setDate(end.getDate() + 6);
+  document.getElementById('rota-week-label').innerHTML =
+    `${rotaWeekStart.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} &mdash; ${end.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  document.getElementById('rota-days').innerHTML = dayNames.map((name, i) => {
+    const d = new Date(rotaWeekStart);
+    d.setDate(d.getDate() + i);
+    const iso = isoDate(d);
+    const isWork = workDays.has(iso);
+    const isToday = iso === todayIso;
+    return `<div class="rota-day ${isWork ? 'is-work' : 'is-free'}${isToday ? ' is-today' : ''}" onclick="toggleRotaDay('${iso}','${wk}')">
+      <div>
+        <div class="rota-dname">${name}${isToday ? ' <span style="font-size:11px;color:var(--accent)">(today)</span>' : ''}</div>
+        <div class="rota-ddate">${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div>
+      </div>
+      <div class="rota-status">${isWork ? '🔴 Work day' : '🟢 Free day'}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleRotaDay(iso, wk) {
+  if (!rotaEdits[wk]) {
+    const saved = JSON.parse(localStorage.getItem('wl_rota') || '{}');
+    rotaEdits[wk] = new Set(saved[wk] || []);
+  }
+  rotaEdits[wk].has(iso) ? rotaEdits[wk].delete(iso) : rotaEdits[wk].add(iso);
+  renderRota();
+}
+
+function rotaNav(dir) {
+  if (!rotaWeekStart) rotaWeekStart = getWeekStart(getUKNow());
+  rotaWeekStart = new Date(rotaWeekStart);
+  rotaWeekStart.setDate(rotaWeekStart.getDate() + dir * 7);
+  renderRota();
+}
+
+function saveRota() {
+  if (!rotaWeekStart) return;
+  const wk = isoDate(rotaWeekStart);
+  const saved = JSON.parse(localStorage.getItem('wl_rota') || '{}');
+  saved[wk] = Array.from(rotaEdits[wk] ?? getRotaForWeek(wk));
+  localStorage.setItem('wl_rota', JSON.stringify(saved));
+  delete rotaEdits[wk];
+  showToast('Rota saved! ✅');
+  renderRota();
+  renderHome();
+}
+
+function rotaContextForPrompt() {
+  const workDays = currentWeekWorkDays();
+  if (!workDays.length) return '';
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const workList = workDays.map(iso => {
+    const d = new Date(iso);
+    return `${dayNames[d.getDay()]} ${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`;
+  }).join(', ');
+  const allDays = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const workSet = new Set(workDays.map(iso => dayNames[new Date(iso).getDay()]));
+  const freeDays = allDays.filter(d => !workSet.has(d)).join(', ');
+  return `\n\nROTA CONSTRAINT (IMPORTANT): The user works on: ${workList}. Do NOT schedule workouts on work days — mark them "rest": true. Only schedule workouts on free days: ${freeDays}.`;
+}
+
+// ══════════════════════════════════════
+// EXERCISE ART & TIPS
+// ══════════════════════════════════════
+const FORM_TIPS = {
+  'push':        'Hands shoulder-width apart, body in a straight line. Lower chest to just above the floor, then push back up.',
+  'squat':       'Feet shoulder-width apart, toes slightly out. Push knees out, chest tall — lower until thighs are parallel to the floor.',
+  'lunge':       'Step forward, lower your back knee toward the floor. Keep your front shin vertical and chest upright.',
+  'plank':       'Forearms or hands flat, body rigid from head to heels. Squeeze your core and glutes — don\'t let your hips sag.',
+  'mountain':    'Start in a high plank. Drive each knee toward your chest alternately. Keep hips level, core braced.',
+  'crunch':      'Feet flat, hands behind ears. Curl your shoulder blades off the floor — don\'t yank your neck. Lower slowly.',
+  'sit-up':      'Bend knees, feet flat. Curl all the way up and lower with control. Engage your core throughout.',
+  'deadlift':    'Hinge at the hips, keep the bar close to your legs, back flat. Drive through your heels to stand tall.',
+  'bench':       'Grip slightly wider than shoulders. Lower the bar to your mid-chest, then press up over your eyes.',
+  'pull-up':     'Hang fully, then pull your elbows down toward your hips. Chin clears the bar — lower with control.',
+  'row':         'Hinge forward, back flat. Pull the weight to your hip, squeeze your shoulder blade at the top.',
+  'shoulder':    'Press the weight directly overhead until arms are straight. Keep your core tight and avoid arching your back.',
+  'bicep':       'Keep elbows pinned to your sides throughout. Curl up, squeeze at the top, lower slowly.',
+  'tricep':      'Keep elbows tucked close to your body. Lower until 90° at the elbow, press all the way back up.',
+  'dip':         'Lower until upper arms are parallel to the floor. Press back up without locking elbows at the top.',
+  'jumping':     'Start with feet together, arms at sides. Jump feet out and raise arms overhead simultaneously. Land softly.',
+  'high knee':   'Drive each knee up to hip height while pumping opposite arm. Stay on the balls of your feet.',
+  'burpee':      'Squat → plank → push-up → jump. Land softly with bent knees. Pace yourself — form over speed.',
+  'russian':     'Sit at 45°, feet raised. Rotate your torso (not just arms) side to side. Control the movement.',
+  'glute':       'Lie flat, feet hip-width. Push through heels and raise hips high. Squeeze your glutes hard at the top.',
+  'hip':         'Upper back on bench, feet flat. Drive hips toward ceiling. Squeeze glutes and hold briefly at the top.',
+  'kettlebell':  'Hinge at hips (not a squat), then drive your hips forward to swing the bell. Arms are just a link — the power comes from your glutes.',
+  'step':        'Place your full foot on the step. Push through that heel to stand up. Step down with control.',
+  'run':         'Land midfoot (not heel), relax shoulders. Keep a steady breathing rhythm — in through the nose, out through the mouth.',
+  'walk':        'Upright posture, arms swinging naturally, heel-to-toe stride. Aim for a brisk, purposeful pace.',
+  'cycle':       'Seat height so the leg is almost straight at the bottom stroke. Pedal in smooth circles, not just stomps.',
+  'leg':         'Push the platform away from you. Don\'t lock your knees at the top. Lower with full control.',
+  'lat':         'Sit tall, grip wider than shoulders. Pull the bar to your upper chest, driving elbows down. Avoid rocking.',
+  'chest':       'Lie flat or on an incline. Lower the dumbbells in a wide arc until you feel a chest stretch, then squeeze them back up.',
+  'default':     'Focus on controlled movement through the full range. Quality reps beat rushed ones — breathe steadily.'
+};
+
+// SVG helper shortcuts
+const _bg  = `<rect width="120" height="88" rx="8" fill="rgba(0,0,0,0.3)"/>`;
+const _grd = (y=78) => `<line x1="0" y1="${y}" x2="120" y2="${y}" stroke="#1e2a1e" stroke-width="1.5"/>`;
+const _hd  = (cx,cy,r=7) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(0,230,118,0.15)" stroke="#00e676" stroke-width="2"/>`;
+const _ln  = (x1,y1,x2,y2,w=2.5,op=1,dash='') => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#00e676" stroke-width="${w}" stroke-linecap="round" opacity="${op}"${dash?` stroke-dasharray="${dash}"`:''}/>`;
+const _rc  = (x,y,w,h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="rgba(0,230,118,0.2)" stroke="#00e676" stroke-width="1.5"/>`;
+const _cl  = (cx,cy,r) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="rgba(0,230,118,0.2)" stroke="#00e676" stroke-width="1.5"/>`;
+const _svg = inner => `<svg viewBox="0 0 120 88" xmlns="http://www.w3.org/2000/svg">${_bg}${inner}</svg>`;
+
+const EXERCISE_ART = {
+  push: _svg(
+    _grd(72)+_hd(104,38)+
+    _ln(97,42,16,48)+_ln(82,44,82,72)+_ln(46,46,46,72)+_ln(16,48,10,72)
+  ),
+  squat: _svg(
+    _grd(80)+_hd(60,12)+
+    _ln(60,20,56,44)+_ln(58,30,30,40)+_ln(58,30,86,38)+
+    _ln(56,44,34,62,3)+_ln(56,44,78,62,3)+
+    _ln(34,62,40,80)+_ln(78,62,72,80)
+  ),
+  lunge: _svg(
+    _grd(80)+_hd(65,12)+
+    _ln(65,20,64,46)+_ln(65,30,46,42)+_ln(65,30,82,36)+
+    _ln(64,46,80,62,3)+_ln(80,62,88,80)+
+    _ln(64,46,44,60,3)+_ln(44,60,36,80)
+  ),
+  plank: _svg(
+    _grd(74)+_hd(106,40)+
+    _ln(99,44,16,50)+
+    _ln(76,46,60,54)+_ln(60,54,58,74)+
+    _ln(42,48,26,56)+_ln(26,56,24,74)+
+    _ln(16,50,10,74)
+  ),
+  mountain: _svg(
+    _grd(74)+_hd(104,38)+
+    _ln(97,42,16,50)+_ln(82,44,82,74)+_ln(40,48,40,74)+
+    _ln(16,50,36,62,3)+_ln(36,62,56,70)
+  ),
+  crunch: _svg(
+    _grd(70)+_hd(42,36)+
+    _ln(42,44,56,60)+_ln(48,48,32,42)+_ln(48,48,56,42)+
+    _ln(56,60,76,50,3)+_ln(76,50,102,70)
+  ),
+  'sit-up': _svg(
+    _grd(70)+_hd(42,36)+
+    _ln(42,44,56,60)+_ln(48,48,32,42)+_ln(48,48,56,42)+
+    _ln(56,60,76,50,3)+_ln(76,50,102,70)
+  ),
+  deadlift: _svg(
+    _grd(80)+_hd(74,22)+
+    _ln(74,30,62,56)+_ln(68,36,50,50)+_ln(62,34,40,48)+
+    _ln(20,58,94,58,3)+_cl(20,58,6)+_cl(94,58,6)+
+    _ln(62,56,54,80)+_ln(62,56,68,80)
+  ),
+  bench: _svg(
+    _rc(10,56,100,10)+_ln(20,66,20,80,2)+_ln(100,66,100,80,2)+
+    _hd(22,50)+_ln(28,54,92,58)+
+    _ln(55,54,48,36)+_ln(70,56,76,36)+
+    _ln(30,34,94,34,2.5)+_cl(30,34,5)+_cl(94,34,5)
+  ),
+  'pull-up': _svg(
+    _ln(26,10,94,10,3)+_hd(60,24)+
+    _ln(57,18,44,10)+_ln(63,18,76,10)+
+    _ln(60,31,60,58)+_ln(60,58,50,76)+_ln(60,58,70,76)
+  ),
+  row: _svg(
+    _grd(80)+_hd(80,22)+
+    _ln(80,29,64,54)+_ln(74,38,52,46)+
+    _rc(40,54,12,6)+
+    _ln(64,54,52,68,3)+_ln(52,68,54,80)+
+    _ln(64,54,76,66,3)+_ln(76,66,78,80)
+  ),
+  shoulder: _svg(
+    _grd(80)+_hd(60,14)+
+    _ln(60,22,60,52)+
+    _ln(60,32,40,24)+_ln(40,24,34,8)+
+    _ln(60,32,80,24)+_ln(80,24,86,8)+
+    _rc(28,4,12,6)+_rc(80,4,12,6)+
+    _ln(60,52,52,80)+_ln(60,52,68,80)
+  ),
+  bicep: _svg(
+    _grd(80)+_hd(60,14)+
+    _ln(60,22,60,52)+
+    _ln(60,32,42,40)+_ln(42,40,36,24)+
+    _ln(60,32,76,40)+_ln(76,40,78,62)+
+    _rc(30,20,10,6)+_rc(74,60,10,6)+
+    _ln(60,52,52,80)+_ln(60,52,68,80)
+  ),
+  tricep: _svg(
+    _grd(80)+
+    _ln(24,34,24,56,3)+_ln(96,34,96,56,3)+
+    _ln(20,34,28,34,2)+_ln(92,34,100,34,2)+
+    _hd(60,44)+_ln(56,50,30,56)+_ln(64,50,90,56)+
+    _ln(60,51,60,66)+_ln(60,66,52,80)+_ln(60,66,68,80)
+  ),
+  dip: _svg(
+    _grd(80)+
+    _ln(24,34,24,56,3)+_ln(96,34,96,56,3)+
+    _ln(20,34,28,34,2)+_ln(92,34,100,34,2)+
+    _hd(60,44)+_ln(56,50,30,56)+_ln(64,50,90,56)+
+    _ln(60,51,60,66)+_ln(60,66,52,80)+_ln(60,66,68,80)
+  ),
+  jumping: _svg(
+    _grd(80)+_hd(60,12)+
+    _ln(60,20,60,52)+
+    _ln(60,30,22,16)+_ln(60,30,98,16)+
+    _ln(60,52,36,80)+_ln(60,52,84,80)
+  ),
+  'high knee': _svg(
+    _grd(80)+_hd(60,12)+
+    _ln(60,20,58,46)+_ln(59,32,40,22)+_ln(59,32,76,44)+
+    _ln(58,46,44,60,3)+_ln(44,60,50,80)+
+    _ln(58,46,68,64,3)+_ln(68,64,72,80)+
+    _ln(76,12,86,12,1.5,0.5,'3 2')+_ln(78,17,86,17,1,0.35,'3 2')
+  ),
+  burpee: _svg(
+    _grd(80)+_hd(60,8,7)+
+    _ln(60,15,60,44)+_ln(60,26,36,18)+_ln(60,26,84,18)+
+    _ln(60,44,46,62)+_ln(60,44,74,62)+
+    _ln(46,62,42,80)+_ln(74,62,78,80)
+  ),
+  russian: _svg(
+    _grd(78)+_hd(52,28)+
+    _ln(52,36,52,60)+_ln(52,46,76,36)+_ln(52,46,36,52,1.5,0.4,'4 2')+
+    _ln(52,60,66,52,3)+_ln(66,52,88,64)+
+    _ln(52,60,36,52,3)+_ln(36,52,14,64)
+  ),
+  glute: _svg(
+    _grd(78)+_hd(16,52)+
+    _ln(23,56,56,44)+_ln(56,44,72,58,3)+_ln(72,58,84,78)+
+    _ln(30,62,10,78)+_ln(36,60,54,72)
+  ),
+  hip: _svg(
+    _grd(78)+_hd(16,52)+
+    _ln(23,56,56,44)+_ln(56,44,72,58,3)+_ln(72,58,84,78)+
+    _ln(30,62,10,78)+_ln(36,60,54,72)
+  ),
+  kettlebell: _svg(
+    _grd(80)+_hd(70,18)+
+    _ln(70,25,62,50)+_ln(66,36,46,52)+_ln(64,38,38,56)+
+    _cl(34,64,8)+_ln(30,58,38,58)+
+    _ln(62,50,44,66,3)+_ln(44,66,48,80)+
+    _ln(62,50,78,62,3)+_ln(78,62,74,80)
+  ),
+  step: _svg(
+    _rc(46,58,52,20)+_grd(80)+_hd(54,14)+
+    _ln(54,22,54,46)+_ln(54,32,36,42)+_ln(54,32,70,36)+
+    _ln(54,46,64,58,3)+_ln(64,58,70,58)+
+    _ln(54,46,44,62,3)+_ln(44,62,38,80)
+  ),
+  run: _svg(
+    _grd(80)+_hd(60,12)+
+    _ln(60,20,58,46)+_ln(59,32,40,24)+_ln(59,32,76,42)+
+    _ln(58,46,44,60,3)+_ln(44,60,36,80)+
+    _ln(58,46,74,60,3)+_ln(74,60,88,76)+
+    _ln(20,20,10,20,1.5,0.5,'3 2')+_ln(22,26,12,26,1,0.35,'3 2')
+  ),
+  walk: _svg(
+    _grd(80)+_hd(60,12)+
+    _ln(60,20,60,48)+_ln(60,32,44,42)+_ln(60,32,74,36)+
+    _ln(60,48,48,66,3)+_ln(48,66,44,80)+
+    _ln(60,48,72,62,3)+_ln(72,62,80,78)
+  ),
+  leg: _svg(
+    _rc(20,36,80,10)+_ln(20,36,20,82,2.5)+_ln(100,36,100,82,2.5)+
+    _hd(60,22)+_ln(60,30,60,36)+
+    _ln(40,46,80,46,3)+_cl(40,46,5)+_cl(80,46,5)
+  ),
+  lat: _svg(
+    _ln(20,10,100,10,2.5)+_hd(60,22)+
+    _ln(60,30,46,20)+_ln(60,30,74,20)+
+    _ln(60,29,60,52)+_ln(60,36,44,44)+_ln(60,36,76,44)+
+    _ln(60,52,50,72)+_ln(60,52,70,72)
+  ),
+  chest: _svg(
+    _rc(10,56,100,10)+_hd(22,50)+_ln(28,54,92,58)+
+    _ln(55,54,44,36)+_ln(72,56,82,36)+
+    _ln(26,34,98,34,2.5)+_cl(26,34,5)+_cl(98,34,5)
+  ),
+  default: _svg(
+    _grd(80)+_hd(60,12)+
+    _ln(60,20,60,50)+
+    _ln(60,32,40,46)+_ln(60,32,80,24)+
+    _ln(60,50,48,76)+_ln(60,50,72,76)
+  )
+};
+
+function getExerciseArt(name) {
+  const n = (name || '').toLowerCase();
+  for (const key of Object.keys(EXERCISE_ART)) {
+    if (n.includes(key)) return EXERCISE_ART[key];
+  }
+  return EXERCISE_ART.default;
+}
+
+function getFormTip(name) {
+  const n = (name || '').toLowerCase();
+  for (const key of Object.keys(FORM_TIPS)) {
+    if (n.includes(key)) return FORM_TIPS[key];
+  }
+  return FORM_TIPS.default;
+}
+
+// ══════════════════════════════════════
+// EXERCISE IMAGE DB
+// ══════════════════════════════════════
+const IMG_BASE = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+let exerciseDB = null;
+let dbLoading  = false;
+
+async function ensureExerciseDB() {
+  if (exerciseDB || dbLoading) return;
+  dbLoading = true;
+  try {
+    const r = await fetch('https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json');
+    exerciseDB = await r.json();
+    // Re-render whichever exercise view is currently visible
+    const active = document.querySelector('.view.active')?.id;
+    if (active === 'view-home') renderHome();
+    if (active === 'view-plan') renderPlan();
+  } catch (err) {
+    console.warn('Exercise DB unavailable, using SVG art.', err);
+  }
+  dbLoading = false;
+}
+
+function dbMatch(name) {
+  if (!exerciseDB) return null;
+  const n = name.toLowerCase().trim();
+  // Stem: strip trailing 's'/'es' for basic plural handling
+  const stem = w => w.replace(/(?:es|s)$/, '');
+
+  // 1. Exact
+  let m = exerciseDB.find(e => e.name.toLowerCase() === n);
+  if (m) return m;
+
+  // 2. Word-overlap with stemming
+  const words = n.split(/\s+/).filter(w => w.length > 2).map(stem);
+  if (!words.length) return null;
+
+  let best = null, bestScore = 0, bestLen = 0;
+  for (const ex of exerciseDB) {
+    const exWords = ex.name.toLowerCase().split(/\s+/).map(stem);
+    const score = words.reduce((acc, w) =>
+      acc + (exWords.some(ew => ew.includes(w) || w.includes(ew)) ? 1 : 0), 0);
+    // Prefer longer name matches (more specific) on equal score
+    if (score > bestScore || (score === bestScore && ex.name.length > bestLen)) {
+      bestScore = score; best = ex; bestLen = ex.name.length;
+    }
+  }
+  // Require at least 1 match for short names, 40% for longer ones
+  const threshold = words.length <= 2 ? 1 : Math.ceil(words.length * 0.4);
+  return bestScore >= threshold ? best : null;
+}
+
+function exImgFail(img, name) {
+  img.parentElement.innerHTML = getExerciseArt(name);
+}
+
+function renderExCard(e) {
+  const detail = e.sets ? `${e.sets} sets × ${e.reps} reps` : (e.duration || '');
+  const match  = dbMatch(e.name);
+  let art;
+  if (match && match.images && match.images.length > 0) {
+    const safeName = e.name.replace(/"/g, '').replace(/'/g, '&#39;');
+    if (match.images.length >= 2) {
+      // Crossfade between start position (0.jpg) and end position (1.jpg)
+      art = `<div class="ex-anim">
+        <img class="ex-img-b" src="${IMG_BASE}${match.images[1]}" alt="${safeName}" loading="lazy" onerror="this.style.display='none'">
+        <img class="ex-img-a" src="${IMG_BASE}${match.images[0]}" alt="${safeName}" loading="lazy" onerror="exImgFail(this,'${safeName}')">
+      </div>`;
+    } else {
+      art = `<img src="${IMG_BASE}${match.images[0]}" alt="${safeName}"
+        style="width:100%;height:100%;object-fit:cover;border-radius:8px"
+        loading="lazy" onerror="exImgFail(this,'${safeName}')">`;
+    }
+  } else {
+    art = getExerciseArt(e.name);
+  }
+  return `<div class="ex-card">
+    <div class="ex-art">${art}</div>
+    <div class="ex-info">
+      <div class="ex-name">${e.name}</div>
+      <div class="ex-sets">${detail}</div>
+      <div class="ex-tip">${getFormTip(e.name)}</div>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════
+init();
+</script>
+</body>
+</html>
