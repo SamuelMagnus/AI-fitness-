@@ -251,6 +251,66 @@
       .view{margin:0 auto}
       .bottom-nav{left:50%;transform:translateX(-50%)}
     }
+
+    /* ══════════════════════════════════════
+       FOOD SCANNER
+    ══════════════════════════════════════ */
+    .scan-modes{display:flex;gap:10px;padding:0 20px 18px}
+    .scan-mode-btn{flex:1;padding:13px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--card);cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:13px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .2s}
+    .scan-mode-btn.active{border-color:var(--accent);background:var(--accent-dim);color:var(--accent)}
+    .scan-mode-btn svg{width:22px;height:22px}
+    .scan-panel{display:none;padding:0 20px}
+    .scan-panel.active{display:block}
+
+    /* camera */
+    .cam-wrap{position:relative;border-radius:var(--radius);overflow:hidden;background:#000;aspect-ratio:4/3;margin-bottom:14px}
+    #cam-feed{width:100%;height:100%;object-fit:cover;display:block}
+    .cam-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+    .cam-frame{width:72%;aspect-ratio:1;border:2px solid var(--accent);border-radius:16px;box-shadow:0 0 0 9999px rgba(0,0,0,.45)}
+    .cam-actions{display:flex;gap:10px;margin-bottom:14px}
+    #cam-canvas{display:none}
+
+    /* result card */
+    .food-result{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;animation:viewIn .3s ease}
+    .food-result-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:4px}
+    .food-result-serving{font-size:13px;color:var(--muted);margin-bottom:14px}
+    .macro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+    .macro-cell{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 6px;text-align:center}
+    .macro-val{font-family:'Syne',sans-serif;font-size:17px;color:var(--accent)}
+    .macro-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+    .macro-extra{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+    .macro-row{display:flex;justify-content:space-between;font-size:13px;padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px}
+    .macro-row span:last-child{font-weight:600;color:var(--text)}
+    .mfp-hint{font-size:12px;color:var(--muted);background:rgba(0,176,255,.08);border:1px solid rgba(0,176,255,.18);border-radius:8px;padding:9px 12px;margin-bottom:14px;line-height:1.5}
+    .mfp-hint strong{color:var(--accent2)}
+
+    /* barcode */
+    .barcode-wrap{position:relative;border-radius:var(--radius);overflow:hidden;background:#000;aspect-ratio:16/9;margin-bottom:14px}
+    #barcode-feed{width:100%;height:100%;object-fit:cover;display:block}
+    .barcode-line{position:absolute;top:50%;left:10%;right:10%;height:2px;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:scanLine 1.8s ease-in-out infinite}
+    @keyframes scanLine{0%,100%{top:30%}50%{top:70%}}
+    .barcode-hint{font-size:13px;color:var(--muted);text-align:center;margin-bottom:14px}
+
+    /* search */
+    .food-search-wrap{position:relative;margin-bottom:14px}
+    .food-search-wrap input{padding-left:44px}
+    .food-search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;display:flex}
+    .search-results{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+    .search-item{padding:13px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:background .18s}
+    .search-item:hover{background:rgba(255,255,255,.08)}
+    .search-item-name{font-size:14px;font-weight:600;margin-bottom:2px}
+    .search-item-brand{font-size:12px;color:var(--muted)}
+    .search-item-cal{font-size:13px;color:var(--accent);font-weight:600}
+
+    /* log */
+    .food-log-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .food-log-title{font-size:15px;font-weight:600}
+    .food-log-total{font-size:13px;color:var(--accent);font-weight:600}
+    .log-entry{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:10px;font-size:13px}
+    .log-entry-info{flex:1}
+    .log-entry-name{font-weight:600;margin-bottom:2px}
+    .log-entry-meta{font-size:11px;color:var(--muted)}
+    .log-empty{text-align:center;color:var(--muted);font-size:14px;padding:20px 0}
   </style>
 </head>
 <body>
@@ -534,6 +594,95 @@
 </div>
 
 <!-- ══════════════════════════════════════
+     FOOD SCANNER VIEW
+══════════════════════════════════════ -->
+<div class="view" id="view-food">
+  <div class="view-header">
+    <h1>Food Scanner</h1>
+    <p class="sub">Scan, photograph, or search your food</p>
+  </div>
+
+  <!-- Mode switcher -->
+  <div class="scan-modes">
+    <button class="scan-mode-btn active" id="mode-photo" onclick="switchScanMode('photo')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+        <circle cx="12" cy="13" r="4"/>
+      </svg>
+      Photo AI
+    </button>
+    <button class="scan-mode-btn" id="mode-barcode" onclick="switchScanMode('barcode')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="4" height="18"/><rect x="9" y="3" width="2" height="18"/>
+        <rect x="13" y="3" width="4" height="18"/><rect x="19" y="3" width="2" height="18"/>
+      </svg>
+      Barcode
+    </button>
+    <button class="scan-mode-btn" id="mode-search" onclick="switchScanMode('search')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      Search
+    </button>
+  </div>
+
+  <!-- ── PHOTO MODE ── -->
+  <div class="scan-panel active" id="panel-photo">
+    <div class="cam-wrap">
+      <video id="cam-feed" autoplay playsinline muted></video>
+      <div class="cam-overlay"><div class="cam-frame"></div></div>
+    </div>
+    <canvas id="cam-canvas"></canvas>
+    <div class="cam-actions">
+      <button class="btn btn-secondary" style="flex:1" id="cam-start-btn" onclick="startCamera()">Start Camera</button>
+      <button class="btn btn-primary" style="flex:1" id="cam-snap-btn" onclick="snapAndAnalyse()" disabled>
+        📷 Analyse Food
+      </button>
+    </div>
+    <p class="text-sm text-muted" style="text-align:center;margin-bottom:16px">Point at your meal and tap Analyse. Claude will identify the food and estimate calories.</p>
+    <div id="photo-result"></div>
+  </div>
+
+  <!-- ── BARCODE MODE ── -->
+  <div class="scan-panel" id="panel-barcode">
+    <div class="barcode-wrap">
+      <video id="barcode-feed" autoplay playsinline muted></video>
+      <div class="barcode-line" id="barcode-line" style="display:none"></div>
+    </div>
+    <div class="cam-actions">
+      <button class="btn btn-secondary" style="flex:1" id="barcode-start-btn" onclick="startBarcode()">Start Scanner</button>
+      <button class="btn btn-danger" style="flex:1" id="barcode-stop-btn" onclick="stopBarcode()" style="display:none">Stop</button>
+    </div>
+    <p class="barcode-hint">Point your camera at a product barcode. Keep it steady and well-lit.</p>
+    <div id="barcode-result"></div>
+  </div>
+
+  <!-- ── SEARCH MODE ── -->
+  <div class="scan-panel" id="panel-search">
+    <div class="food-search-wrap">
+      <div class="food-search-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+      <input type="text" id="food-search-in" placeholder="e.g. chicken breast, banana, oats…" oninput="foodSearchDebounce()">
+    </div>
+    <p class="text-sm text-muted" style="margin-bottom:12px">Searches Open Food Facts — same database as MFP's free tier, exact label data.</p>
+    <div id="search-results"></div>
+    <div id="search-result-detail"></div>
+  </div>
+
+  <!-- ── TODAY'S FOOD LOG ── -->
+  <div style="padding:0 20px;margin-top:4px">
+    <div class="food-log-header">
+      <div class="food-log-title">Today's Food Log</div>
+      <div class="food-log-total" id="log-total-cal">0 kcal logged</div>
+    </div>
+    <div id="food-log-list"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
      BOTTOM NAV
 ══════════════════════════════════════ -->
 <nav class="bottom-nav hidden" id="bottom-nav">
@@ -562,6 +711,12 @@
       <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
       <circle cx="8" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="16" r="1.2" fill="currentColor" stroke="none"/><circle cx="16" cy="16" r="1.2" fill="currentColor" stroke="none"/>
     </svg>Rota
+  </button>
+  <button class="nav-btn" onclick="goTo('food')" id="nav-food">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/>
+      <line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>
+    </svg>Food
   </button>
   <button class="nav-btn" onclick="goTo('settings')" id="nav-settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -625,6 +780,9 @@ function showApp() {
 // VIEW NAVIGATION
 // ══════════════════════════════════════
 function goTo(name) {
+  // Stop cameras if leaving food tab
+  if (name !== 'food') { stopCamera(); stopBarcode(); }
+
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
@@ -636,6 +794,7 @@ function goTo(name) {
   if (name === 'progress') renderProgress();
   if (name === 'settings') renderSettings();
   if (name === 'rota')     renderRota();
+  if (name === 'food')     renderFoodLog();
   if (name === 'chat') {
     setTimeout(() => {
       const m = document.getElementById('chat-msgs');
@@ -1670,6 +1829,383 @@ function renderExCard(e) {
       <div class="ex-sets">${detail}</div>
       <div class="ex-tip">${getFormTip(e.name)}</div>
     </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// FOOD SCANNER
+// ══════════════════════════════════════
+let camStream      = null;
+let barcodeStream  = null;
+let barcodeReader  = null;
+let scanMode       = 'photo';
+let foodSearchTimer = null;
+
+// Storage helpers for food log
+const FL = {
+  get log() { return JSON.parse(localStorage.getItem('fitai_food_log') || '[]') },
+  save(log) { localStorage.setItem('fitai_food_log', JSON.stringify(log)) },
+  todayEntries() {
+    const today = new Date().toDateString();
+    return this.log.filter(e => new Date(e.ts).toDateString() === today);
+  }
+};
+
+function switchScanMode(mode) {
+  scanMode = mode;
+  stopCamera(); stopBarcode();
+  document.querySelectorAll('.scan-mode-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.scan-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('mode-' + mode).classList.add('active');
+  document.getElementById('panel-' + mode).classList.add('active');
+}
+
+// ── PHOTO MODE ──────────────────────────
+async function startCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 960 } }
+    });
+    const video = document.getElementById('cam-feed');
+    video.srcObject = camStream;
+    await video.play();
+    document.getElementById('cam-start-btn').textContent = '🔄 Restart';
+    document.getElementById('cam-snap-btn').disabled = false;
+  } catch (err) {
+    showToast('Camera access denied — check browser permissions');
+  }
+}
+
+function stopCamera() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  document.getElementById('cam-snap-btn').disabled = true;
+  document.getElementById('cam-start-btn').textContent = 'Start Camera';
+}
+
+async function snapAndAnalyse() {
+  const video  = document.getElementById('cam-feed');
+  const canvas = document.getElementById('cam-canvas');
+  if (!camStream || video.readyState < 2) { showToast('Camera not ready'); return; }
+
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+
+  const btn = document.getElementById('cam-snap-btn');
+  btn.disabled = true;
+  btn.textContent = '🔍 Analysing…';
+  document.getElementById('photo-result').innerHTML = '';
+
+  try {
+    const key = S.apiKey;
+    if (!key) throw new Error('No API key. Add one in Settings.');
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 800,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'text', text: `Analyse this food image. Return ONLY a JSON object — no markdown, no preamble:
+{
+  "name": "exact food name (e.g. Grilled Chicken Breast with Rice)",
+  "serving": "estimated portion size visible (e.g. 200g)",
+  "calories": 350,
+  "protein_g": 32,
+  "carbs_g": 28,
+  "fat_g": 8,
+  "fibre_g": 3,
+  "sugar_g": 2,
+  "sodium_mg": 420,
+  "confidence": "high|medium|low",
+  "notes": "any important caveats about the estimate"
+}` }
+          ]
+        }]
+      })
+    });
+    if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.error?.message || 'API error'); }
+    const d = await resp.json();
+    let raw = d.content[0].text.trim().replace(/^```json\s*/i,'').replace(/^```\s*/i,'').replace(/\s*```$/i,'');
+    const food = JSON.parse(raw);
+    showFoodResult(food, 'photo-result', 'AI estimate from photo');
+  } catch (err) {
+    document.getElementById('photo-result').innerHTML = `<div class="card" style="color:#ff5555;font-size:13px">Error: ${err.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '📷 Analyse Food';
+}
+
+// ── BARCODE MODE ─────────────────────────
+async function startBarcode() {
+  // Lazy-load ZXing from CDN
+  if (!window.ZXing) {
+    showToast('Loading barcode library…');
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/zxing-js/0.21.3/umd/index.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  try {
+    const video = document.getElementById('barcode-feed');
+    barcodeStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    video.srcObject = barcodeStream;
+    await video.play();
+    document.getElementById('barcode-line').style.display = '';
+    document.getElementById('barcode-start-btn').style.display = 'none';
+    document.getElementById('barcode-stop-btn').style.display = '';
+    document.getElementById('barcode-result').innerHTML = '';
+
+    const hints = new Map();
+    const formats = [
+      ZXing.BarcodeFormat.EAN_13, ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,  ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128
+    ];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+    barcodeReader = new ZXing.BrowserMultiFormatReader(hints);
+
+    barcodeReader.decodeFromVideoElement(video, async (result, err) => {
+      if (!result) return;
+      stopBarcode();
+      showToast('Barcode detected! Looking up…');
+      await lookupBarcode(result.text);
+    });
+  } catch (err) {
+    showToast('Camera access denied — check browser permissions');
+  }
+}
+
+function stopBarcode() {
+  if (barcodeReader) { try { barcodeReader.reset(); } catch(e){} barcodeReader = null; }
+  if (barcodeStream) { barcodeStream.getTracks().forEach(t => t.stop()); barcodeStream = null; }
+  document.getElementById('barcode-line').style.display = 'none';
+  document.getElementById('barcode-start-btn').style.display = '';
+  document.getElementById('barcode-stop-btn').style.display = 'none';
+}
+
+async function lookupBarcode(code) {
+  const el = document.getElementById('barcode-result');
+  el.innerHTML = `<div class="card" style="text-align:center;color:var(--muted);font-size:14px">Looking up barcode ${code}…</div>`;
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const d = await r.json();
+    if (d.status !== 1) { el.innerHTML = `<div class="card" style="color:#ff5555;font-size:13px">Product not found in database. Try searching manually.</div>`; return; }
+    const p = d.product;
+    const n = p.nutriments || {};
+    const food = {
+      name:        p.product_name || p.generic_name || 'Unknown product',
+      brand:       p.brands || '',
+      serving:     p.serving_size || '100g',
+      calories:    Math.round(n['energy-kcal_serving'] || n['energy-kcal_100g'] || 0),
+      protein_g:   +(n.proteins_serving    || n.proteins_100g    || 0).toFixed(1),
+      carbs_g:     +(n.carbohydrates_serving|| n.carbohydrates_100g|| 0).toFixed(1),
+      fat_g:       +(n.fat_serving         || n.fat_100g         || 0).toFixed(1),
+      fibre_g:     +(n.fiber_serving       || n.fiber_100g       || 0).toFixed(1),
+      sugar_g:     +(n.sugars_serving      || n.sugars_100g      || 0).toFixed(1),
+      sodium_mg:   Math.round((n.sodium_serving || n.sodium_100g || 0) * 1000),
+      confidence:  'high',
+      notes:       p.serving_size ? `Per serving (${p.serving_size})` : 'Per 100g — adjust for actual portion'
+    };
+    showFoodResult(food, 'barcode-result', 'Open Food Facts database');
+  } catch (err) {
+    el.innerHTML = `<div class="card" style="color:#ff5555;font-size:13px">Lookup failed: ${err.message}</div>`;
+  }
+}
+
+// ── SEARCH MODE ───────────────────────────
+function foodSearchDebounce() {
+  clearTimeout(foodSearchTimer);
+  foodSearchTimer = setTimeout(doFoodSearch, 500);
+}
+
+async function doFoodSearch() {
+  const q = document.getElementById('food-search-in').value.trim();
+  const el = document.getElementById('search-results');
+  if (q.length < 2) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="text-sm text-muted" style="text-align:center;padding:12px">Searching…</div>`;
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,serving_size,code`);
+    const d = await r.json();
+    const products = (d.products || []).filter(p => p.product_name && p.nutriments);
+    if (!products.length) { el.innerHTML = `<div class="text-sm text-muted" style="text-align:center;padding:12px">No results found. Try a different term.</div>`; return; }
+    el.innerHTML = `<div class="search-results">${products.map(p => {
+      const kcal = Math.round(p.nutriments['energy-kcal_serving'] || p.nutriments['energy-kcal_100g'] || 0);
+      return `<div class="search-item" onclick="selectSearchProduct('${p.code}')">
+        <div class="search-item-name">${p.product_name}</div>
+        ${p.brands ? `<div class="search-item-brand">${p.brands}</div>` : ''}
+        <div class="search-item-cal">${kcal} kcal ${p.serving_size ? `· per ${p.serving_size}` : 'per 100g'}</div>
+      </div>`;
+    }).join('')}</div>`;
+  } catch (err) {
+    el.innerHTML = `<div class="text-sm text-muted" style="text-align:center;padding:12px">Search failed. Check your connection.</div>`;
+  }
+}
+
+async function selectSearchProduct(code) {
+  document.getElementById('search-result-detail').innerHTML = `<div class="text-sm text-muted" style="text-align:center;padding:12px">Loading details…</div>`;
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v0/product/${code}.json`);
+    const d = await r.json();
+    if (d.status !== 1) return;
+    const p = d.product;
+    const n = p.nutriments || {};
+    const food = {
+      name:       p.product_name || 'Unknown',
+      brand:      p.brands || '',
+      serving:    p.serving_size || '100g',
+      calories:   Math.round(n['energy-kcal_serving'] || n['energy-kcal_100g'] || 0),
+      protein_g:  +(n.proteins_serving    || n.proteins_100g    || 0).toFixed(1),
+      carbs_g:    +(n.carbohydrates_serving|| n.carbohydrates_100g|| 0).toFixed(1),
+      fat_g:      +(n.fat_serving         || n.fat_100g         || 0).toFixed(1),
+      fibre_g:    +(n.fiber_serving       || n.fiber_100g       || 0).toFixed(1),
+      sugar_g:    +(n.sugars_serving      || n.sugars_100g      || 0).toFixed(1),
+      sodium_mg:  Math.round((n.sodium_serving || n.sodium_100g || 0) * 1000),
+      confidence: 'high',
+      notes:      p.serving_size ? `Per serving (${p.serving_size})` : 'Per 100g — adjust for actual portion'
+    };
+    document.getElementById('search-results').innerHTML = '';
+    showFoodResult(food, 'search-result-detail', 'Open Food Facts database');
+  } catch (err) {
+    document.getElementById('search-result-detail').innerHTML = `<div class="card" style="color:#ff5555;font-size:13px">Failed to load: ${err.message}</div>`;
+  }
+}
+
+// ── SHARED RESULT RENDERER ────────────────
+function showFoodResult(food, targetId, source) {
+  const plan = S.plan;
+  const target = plan?.calories?.daily_target || 0;
+  const todayLogged = FL.todayEntries().reduce((s, e) => s + e.calories, 0);
+  const remaining = target ? target - todayLogged : null;
+
+  const confidenceBadge = food.confidence === 'high'
+    ? `<span class="badge badge-green">Exact data</span>`
+    : food.confidence === 'medium'
+    ? `<span class="badge badge-blue">AI estimate</span>`
+    : `<span class="badge" style="background:rgba(255,200,0,.12);color:#ffc800">Low confidence</span>`;
+
+  document.getElementById(targetId).innerHTML = `
+    <div class="food-result">
+      <div class="food-result-name">${food.name}${food.brand ? ` <span style="font-size:13px;color:var(--muted);font-weight:400">by ${food.brand}</span>` : ''}</div>
+      <div class="food-result-serving">Serving: ${food.serving} &nbsp;·&nbsp; ${source} &nbsp;·&nbsp; ${confidenceBadge}</div>
+
+      <div class="macro-grid">
+        <div class="macro-cell"><div class="macro-val">${food.calories}</div><div class="macro-lbl">kcal</div></div>
+        <div class="macro-cell"><div class="macro-val">${food.protein_g}g</div><div class="macro-lbl">Protein</div></div>
+        <div class="macro-cell"><div class="macro-val">${food.carbs_g}g</div><div class="macro-lbl">Carbs</div></div>
+        <div class="macro-cell"><div class="macro-val">${food.fat_g}g</div><div class="macro-lbl">Fat</div></div>
+      </div>
+
+      <div class="macro-extra">
+        <div class="macro-row"><span style="color:var(--muted)">Fibre</span><span>${food.fibre_g}g</span></div>
+        <div class="macro-row"><span style="color:var(--muted)">Sugar</span><span>${food.sugar_g}g</span></div>
+        <div class="macro-row"><span style="color:var(--muted)">Sodium</span><span>${food.sodium_mg}mg</span></div>
+        ${remaining !== null ? `<div class="macro-row"><span style="color:var(--muted)">Remaining today</span><span style="color:${remaining - food.calories >= 0 ? 'var(--accent)' : '#ff5555'}">${remaining - food.calories} kcal after logging</span></div>` : ''}
+      </div>
+
+      ${food.notes ? `<div class="mfp-hint">ℹ️ ${food.notes}</div>` : ''}
+
+      <div class="mfp-hint">
+        <strong>To log in MyFitnessPal free:</strong> Search for "<strong>${food.name}</strong>${food.brand ? ` ${food.brand}` : ''}" in MFP's food diary — you now have the full breakdown to verify or enter manually.
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1" onclick='logFoodEntry(${JSON.stringify(food).replace(/'/g,"&#39;")})'>
+          ✅ Log to FitAI
+        </button>
+        <button class="btn btn-secondary" style="flex:1" onclick="copyFoodData(${JSON.stringify(food).replace(/'/g,"&#39;")})">
+          📋 Copy Data
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function logFoodEntry(food) {
+  const log = FL.log;
+  log.push({
+    ts:        new Date().toISOString(),
+    name:      food.name,
+    brand:     food.brand || '',
+    serving:   food.serving,
+    calories:  food.calories,
+    protein_g: food.protein_g,
+    carbs_g:   food.carbs_g,
+    fat_g:     food.fat_g,
+    fibre_g:   food.fibre_g
+  });
+  FL.save(log);
+  renderFoodLog();
+  showToast(`${food.name} logged! (${food.calories} kcal)`);
+}
+
+function copyFoodData(food) {
+  const text = `${food.name}${food.brand ? ` (${food.brand})` : ''}\nServing: ${food.serving}\nCalories: ${food.calories} kcal\nProtein: ${food.protein_g}g | Carbs: ${food.carbs_g}g | Fat: ${food.fat_g}g\nFibre: ${food.fibre_g}g | Sugar: ${food.sugar_g}g | Sodium: ${food.sodium_mg}mg`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('Nutrition data copied!'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('Nutrition data copied!');
+  }
+}
+
+function deleteFoodEntry(idx) {
+  const today = new Date().toDateString();
+  const log = FL.log;
+  // Find and remove by matching today's entries index
+  const todayIdxs = log.reduce((acc, e, i) => { if (new Date(e.ts).toDateString() === today) acc.push(i); return acc; }, []);
+  if (todayIdxs[idx] !== undefined) log.splice(todayIdxs[idx], 1);
+  FL.save(log);
+  renderFoodLog();
+}
+
+function renderFoodLog() {
+  const entries = FL.todayEntries();
+  const total   = entries.reduce((s, e) => s + e.calories, 0);
+  const plan    = S.plan;
+  const target  = plan?.calories?.daily_target || 0;
+
+  document.getElementById('log-total-cal').textContent =
+    target ? `${total} / ${target} kcal` : `${total} kcal logged`;
+
+  const el = document.getElementById('food-log-list');
+  if (!entries.length) {
+    el.innerHTML = `<div class="log-empty">No food logged today yet.<br>Scan or search something above!</div>`;
+    return;
+  }
+  el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
+    ${entries.map((e, i) => `
+      <div class="log-entry">
+        <div class="log-entry-info">
+          <div class="log-entry-name">${e.name}</div>
+          <div class="log-entry-meta">${e.serving} · P:${e.protein_g}g C:${e.carbs_g}g F:${e.fat_g}g</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-weight:600;color:var(--accent)">${e.calories}</div>
+          <button class="del-btn" onclick="deleteFoodEntry(${i})" title="Remove">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/>
+            </svg>
+          </button>
+        </div>
+      </div>`).join('')}
   </div>`;
 }
 
